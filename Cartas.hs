@@ -3,12 +3,14 @@
 
 import Data.List
 
-data Palo = Treboles | Diamantes | Picas | Corazones deriving(Show) --Este deriving es temporal para hacer pruebas
+data Palo = Treboles | Diamantes | Picas | Corazones
 
-{--
 instance Show Palo where
-    toDo
---}
+    show Treboles = "♣"
+    show Diamantes = "♦"
+    show Picas = "♠"
+    show Corazones = "♥"
+
 
 data Rango = N Int | Jack | King | Queen | Ace
 
@@ -25,7 +27,7 @@ data Carta = Carta {
                    }
 
 instance Show Carta where
-    show (Carta {rango = rg, palo = p}) = show p ++ show rg
+    show (Carta {rango = rg, palo = p}) = show p ++ " " ++ show rg
 
 data Jugador = Dealer | Player deriving(Show, Read)
 
@@ -66,19 +68,13 @@ valorCarta (Carta (N i) _) = i
 valorCarta (Carta Ace _)   = 11
 valorCarta (Carta _ _)     = 10
 
--- El primer argumento es el valor acumulado de las cartas de la mano que hemos sumado hasta ahora y el segundo 
--- es el valor de la carta a sumar
-sumarCartas :: Int -> Int -> Int
-sumarCartas acc 11
-    | acc + 11 > 21 = acc + 1
-    | otherwise     = acc + 11
-sumarCartas acc actual = acc + actual
-
--- No estoy seguro de si es la forma más óptima, mañana lo pienso bien
+-- Antes podía haber casos donde tomara unos aces como 11 y otros como 1, pero ya lo arreglé
+-- No quedó tan bonito sin embargo
 valor :: Mano -> Int
 valor (Mano c) =
-    let valores = sort (map (valorCarta) c)
-    in foldl' (sumarCartas) 0 valores
+    let (sumaDeNoAces, cantidadAces) = (\(x, y) -> (sum x, length y)) $ span (/= 11) $ sort (map (valorCarta) c)
+        (suma11, suma1) = (sumaDeNoAces + 11 * cantidadAces, sumaDeNoAces + cantidadAces)
+    in  if suma11 <= 21 then suma11 else suma1
 
 busted :: Mano -> Bool
 busted mano = if valor mano > 21 then True else False
@@ -89,10 +85,26 @@ busted mano = if valor mano > 21 then True else False
 blackjack :: Mano -> Bool
 blackjack mano = if valor mano == 21 then True else False
 
+ganador :: Mano -> Mano -> Jugador
+ganador manoDealer manoPlayer = if valor manoDealer >= valor manoPlayer then Dealer else Player
+
+separar :: Mano -> (Mano, Carta, Mano)
+separar (Mano c) =
+    let mitad      = length c `div` 2
+        (izq, der) = (take mitad c, drop mitad c)
+    in (Mano izq, head der, Mano (tail der))
+
 -- Esto es para probar las funciones sobre manos que no sean la baraja completa o vacía
 manoPrueba = Mano [
                     Carta Jack Treboles,
                     Carta (N 1) Diamantes,
+                    Carta Ace Picas
+                  ]
+
+manoPrueba2 = Mano [
+                    Carta Jack Treboles,
+                    Carta (N 1) Diamantes,
+                    Carta (N 9) Diamantes,
                     Carta Ace Picas
                   ]
 
