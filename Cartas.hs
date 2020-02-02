@@ -121,15 +121,14 @@ data Mazo = Vacio | Mitad Carta Mazo Mazo
 
 data Eleccion = Izquierdo | Derecho
 
-{-- Falta hacer el caso base
---}
 desdeMano :: Mano -> Mazo
 desdeMano mano = desdeManoAux $ separar mano
 
 desdeManoAux :: (Mano, Carta, Mano) -> Mazo
-desdeManoAux (left, center, right) =  (center) (desdeMano left) (desdeMano right)
-desdeManoAux (_, center, _) = center Vacio Vacio
-desdeManoAux (_, _, _) = Vacio
+desdeManoAux (Mano [], center, Mano []) = Mitad center Vacio Vacio
+desdeManoAux (Mano [], center, right) = Mitad center Vacio (desdeMano right)
+desdeManoAux (left, center, Mano []) = Mitad center (desdeMano left) Vacio
+desdeManoAux (left, center, right) =  Mitad center (desdeMano left) (desdeMano right)
 
 puedePicar :: Mazo -> Bool
 puedePicar (Vacio) = False
@@ -148,8 +147,7 @@ reconstruir mazo mano = desdeMano $ (\ (Mano listaMazo) (Mano listaMano) -> Mano
 -- Esto es para probar las funciones sobre manos que no sean la baraja completa o vacía
 manoPrueba = Mano [
                     Carta Jack Treboles,
-                    Carta (N 2) Diamantes,
-                    Carta Ace Picas
+                    Carta (N 2) Diamantes
                   ]
 
 manoPrueba2 = Mano [
