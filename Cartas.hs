@@ -1,6 +1,7 @@
 -- Wilfredo Graterol
 -- Diego Peña
 
+import Prelude
 import Data.List
 
 data Palo = Treboles | Diamantes | Picas | Corazones
@@ -11,8 +12,26 @@ instance Show Palo where
     show Picas = "♠"
     show Corazones = "♥"
 
+instance Eq Palo where 
+    (==) Treboles Treboles = True
+    (==) Diamantes Diamantes = True
+    (==) Picas Picas = True
+    (==) Corazones Corazones = True
+    (==) _ _ = False
+    
+    (/=) a b = not (a==b)
 
 data Rango = N Int | Jack | King | Queen | Ace
+
+instance Eq Rango where
+    (==) Jack Jack = True
+    (==) Queen Queen = True
+    (==) King King = True
+    (==) Ace Ace = True
+    (==) (N a) (N b) = a==b
+    (==) _ _ = False
+    
+    (/=) a b = not (a==b)
 
 instance Show Rango where
     show (N a) = show a
@@ -26,8 +45,13 @@ data Carta = Carta {
                     palo :: Palo
                    }
 
+instance Eq Carta where
+    (==) (Carta {rango = rga, palo = pa}) Carta {rango = rgb, palo = pb} = if rga==rgb && pa==pb then True else False
+
+    (/=) a b = not (a==b)
+
 instance Show Carta where
-    show (Carta {rango = rg, palo = p}) = show p ++ " " ++ show rg
+    show (Carta {rango = rg, palo = p}) = show p ++ "" ++ show rg
 
 data Jugador = Dealer | Player deriving(Show, Read)
 
@@ -36,9 +60,6 @@ newtype Mano = Mano [Carta] --deriving(Show)
 instance Show Mano where
     show (Mano c) = concatMap (show) c
 
-data Mazo = Vacio | Mitad Carta Mazo Mazo
-
-data Eleccion = Izquierdo | Derecho
 
 {--
 Funciones de mano
@@ -56,7 +77,7 @@ baraja = Mano $ concatMap (crearPalo) [Treboles, Diamantes, Picas, Corazones]
 -- Crea listas correspondientes a cada palo y luego las une en una sola para formar la baraja
 baraja :: Mano
 baraja =    
-    let rangos = map (N) [1..9] ++ [Jack, King, Queen, Ace]
+    let rangos = map (N) [2..10] ++ [Jack, King, Queen, Ace]
         crearPalo p = map (\rg -> Carta {rango = rg, palo = p}) rangos
     in Mano $ concatMap (crearPalo) [Treboles, Diamantes, Picas, Corazones]
 
@@ -85,6 +106,7 @@ busted mano = if valor mano > 21 then True else False
 blackjack :: Mano -> Bool
 blackjack mano = if valor mano == 21 then True else False
 
+-- Verificar que no hay un bust antes
 ganador :: Mano -> Mano -> Jugador
 ganador manoDealer manoPlayer = if valor manoDealer >= valor manoPlayer then Dealer else Player
 
@@ -94,17 +116,45 @@ separar (Mano c) =
         (izq, der) = (take mitad c, drop mitad c)
     in (Mano izq, head der, Mano (tail der))
 
+
+data Mazo = Vacio | Mitad Carta Mazo Mazo
+
+data Eleccion = Izquierdo | Derecho
+
+{-- Falta hacer el caso base
+--}
+desdeMano :: Mano -> Mazo
+desdeMano mano = desdeManoAux $ separar mano
+
+desdeManoAux :: (Mano, Carta, Mano) -> Mazo
+desdeManoAux (left, center, right) =  (center) (desdeMano left) (desdeMano right)
+desdeManoAux (_, center, _) = center Vacio Vacio
+desdeManoAux (_, _, _) = Vacio
+
+puedePicar :: Mazo -> Bool
+puedePicar (Vacio) = False
+puedePicar (Mitad _ Vacio Vacio) = False
+puedePicar (Mitad _ _ _) = True 
+
+aplanar :: Mazo -> Mano
+aplanar Vacio = vacia
+aplanar (Mitad carta left right) = ((\ (Mano listaIzq) (listaCent) (Mano listaDer) -> Mano (listaIzq++listaCent++listaDer)) 
+                                    (aplanar left) ([carta]) (aplanar right))
+
+reconstruir :: Mazo ->Mano ->Mazo
+reconstruir mazo mano = desdeMano $ (\ (Mano listaMazo) (Mano listaMano) -> Mano (listaMazo \\ listaMano)) (aplanar mazo) mano
+
+
 -- Esto es para probar las funciones sobre manos que no sean la baraja completa o vacía
 manoPrueba = Mano [
                     Carta Jack Treboles,
-                    Carta (N 1) Diamantes,
+                    Carta (N 2) Diamantes,
                     Carta Ace Picas
                   ]
 
 manoPrueba2 = Mano [
                     Carta Jack Treboles,
-                    Carta (N 1) Diamantes,
-                    Carta (N 9) Diamantes,
-                    Carta Ace Picas
+                    Carta (N 2) Diamantes,
+                    Carta Ace Picas,
+                    Carta (N 10) Diamantes
                   ]
-
