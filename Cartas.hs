@@ -3,6 +3,7 @@
 
 import Prelude
 import Data.List
+import Text.Read
 
 data Palo = Treboles | Diamantes | Picas | Corazones
 
@@ -121,7 +122,12 @@ data Mazo = Vacio | Mitad Carta Mazo Mazo
 
 data Eleccion = Izquierdo | Derecho
 
+-- instance Read Eleccion where 
+    -- readsPrec a =
+    -- readPrec a = 
+
 desdeMano :: Mano -> Mazo
+desdeMano (Mano []) = Vacio
 desdeMano mano = desdeManoAux $ separar mano
 
 desdeManoAux :: (Mano, Carta, Mano) -> Mazo
@@ -137,12 +143,35 @@ puedePicar (Mitad _ _ _) = True
 
 aplanar :: Mazo -> Mano
 aplanar Vacio = vacia
-aplanar (Mitad carta left right) = ((\ (Mano listaIzq) (listaCent) (Mano listaDer) -> Mano (listaIzq++listaCent++listaDer)) 
-                                    (aplanar left) ([carta]) (aplanar right))
+aplanar (Mitad carta left right) = let
+    Mano listaIzq = aplanar left
+    listaCent = [carta]
+    Mano listaDer = aplanar right
+    in Mano (listaIzq++listaCent++listaDer)
 
 reconstruir :: Mazo ->Mano ->Mazo
 reconstruir mazo mano = desdeMano $ (\ (Mano listaMazo) (Mano listaMano) -> Mano (listaMazo \\ listaMano)) (aplanar mazo) mano
 
+-- Nota: Aqui se depuran las cartas repetidas
+robar :: Mazo -> Mano -> Eleccion -> Maybe (Mazo,Mano)
+robar Vacio _ _ = Nothing
+robar (Mitad center Vacio Vacio) _ _ = Nothing
+robar (Mitad center left Vacio) _ Derecho = Nothing
+robar (Mitad center Vacio right) _ Izquierdo = Nothing
+robar (Mitad center (Mitad leftCenter leftLeft rightLeft) right) (Mano listaMano) Izquierdo = 
+    Just (reconstruir (Mitad center (Mitad leftCenter leftLeft rightLeft) right) (Mano (leftCenter:listaMano)), (Mano (leftCenter:listaMano)))
+robar (Mitad center left (Mitad rightCenter rightLeft rightRight)) (Mano listaMano) Derecho = 
+    Just (reconstruir (Mitad center left (Mitad rightCenter rightLeft rightRight)) (Mano (rightCenter:listaMano)), (Mano (rightCenter:listaMano)))
+
+juegaLambda :: Mazo ->Mano ->Maybe Mano
+juegaLambda Vacio _ = Nothing
+juegaLambda mazo mano = let
+    Mano listaMazo = aplanar mazo
+    Mano listaMano = mano
+    in if valor (Mano (listaMazo++listaMano)) <= 16 then Nothing else Just $ auxJuegaLambda (17 - valor mano) (aplanar mazo) $ mano
+-- Check this again i in case of aces, it's still not correct
+auxJuegaLambda :: Int -> Mano -> Mano -> Mano
+auxJuegaLambda deseado (Mano (x:xs)) (Mano listaMano) = if deseado < 0 then (Mano (x:xs)) else auxJuegaLambda (17-(valor (Mano (x:listaMano)))) (Mano xs) (Mano (x:listaMano))
 
 -- Esto es para probar las funciones sobre manos que no sean la baraja completa o vacía
 manoPrueba = Mano [
