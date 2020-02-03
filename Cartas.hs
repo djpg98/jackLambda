@@ -3,7 +3,7 @@
 
 import Prelude
 import Data.List
-import Text.Read
+import System.Random
 
 data Palo = Treboles | Diamantes | Picas | Corazones
 
@@ -112,10 +112,25 @@ ganador :: Mano -> Mano -> Jugador
 ganador manoDealer manoPlayer = if valor manoDealer >= valor manoPlayer then Dealer else Player
 
 separar :: Mano -> (Mano, Carta, Mano)
+separar (Mano []) = error "No hay cartas en la mano"
 separar (Mano c) =
     let mitad      = length c `div` 2
         (izq, der) = (take mitad c, drop mitad c)
     in (Mano izq, head der, Mano (tail der))
+
+barajar :: StdGen -> Mano -> Mano
+barajar gen (Mano c) = Mano (barajarAux gen c)
+
+barajarAux :: StdGen -> [Carta] -> [Carta]
+barajarAux _ [] = []
+barajarAux gen listaCartas =
+    let (index, newGen) = randomR(1, subtract 1 $ length listaCartas) gen :: (Int, StdGen)
+        carta = listaCartas !! index
+    in carta:(barajarAux newGen $ delete carta listaCartas)
+
+
+inicialLambda :: Mano -> (Mano, Mano)
+inicialLambda (Mano c) = (Mano $ take 2 c, Mano $ drop 2 c)
 
 
 data Mazo = Vacio | Mitad Carta Mazo Mazo
