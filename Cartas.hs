@@ -181,12 +181,9 @@ robar (Mitad center left (Mitad rightCenter rightLeft rightRight)) (Mano listaMa
 juegaLambda :: Mazo ->Mano ->Maybe Mano
 juegaLambda Vacio _ = Nothing
 juegaLambda mazo mano = let
-    Mano listaMazo = aplanar mazo
+    Mano (x:xs) = aplanar mazo
     Mano listaMano = mano
-    in if valor (Mano (listaMazo++listaMano)) <= 16 then Nothing else Just $ auxJuegaLambda (17 - valor mano) (aplanar mazo) $ mano
--- Check this again i in case of aces, it's still not correct
-auxJuegaLambda :: Int -> Mano -> Mano -> Mano
-auxJuegaLambda deseado (Mano (x:xs)) (Mano listaMano) = if deseado < 0 then (Mano (x:xs)) else auxJuegaLambda (17-(valor (Mano (x:listaMano)))) (Mano xs) (Mano (x:listaMano))
+    in if valor mano > 16 then Just mano else juegaLambda (desdeMano (Mano xs)) (Mano (x:listaMano))
 
 -- Esto es para probar las funciones sobre manos que no sean la baraja completa o vacía
 manoPrueba = Mano [
