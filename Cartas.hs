@@ -170,9 +170,9 @@ reconstruir mazo mano = desdeMano $ (\ (Mano listaMazo) (Mano listaMano) -> Mano
 -- Nota: Aqui se depuran las cartas repetidas
 robar :: Mazo -> Mano -> Eleccion -> Maybe (Mazo,Mano)
 robar Vacio _ _ = Nothing
-robar (Mitad center Vacio Vacio) _ _ = Nothing
-robar (Mitad center left Vacio) _ Derecho = Nothing
-robar (Mitad center Vacio right) _ Izquierdo = Nothing
+robar (Mitad _ Vacio Vacio) _ _ = Nothing
+robar (Mitad _ left Vacio) _ Derecho = Nothing
+robar (Mitad _ Vacio right) _ Izquierdo = Nothing
 robar (Mitad center (Mitad leftCenter leftLeft rightLeft) right) (Mano listaMano) Izquierdo = 
     Just (reconstruir (Mitad center (Mitad leftCenter leftLeft rightLeft) right) (Mano (leftCenter:listaMano)), (Mano (leftCenter:listaMano)))
 robar (Mitad center left (Mitad rightCenter rightLeft rightRight)) (Mano listaMano) Derecho = 
