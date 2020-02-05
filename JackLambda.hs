@@ -19,13 +19,14 @@ instance Read GameState where
     readsPrec _ file = (\[jj, vL, nomb, gen, din, obj, ap] -> 
         [((GS (read jj) (read vL) nomb (read gen) (read din) (read obj) (read ap)), " ")]) $ lines file
 
-{--instance Show GameState where
-    show (GS {juegosJugados = jj, victoriasLambda = vL, nombre = nomb, generador = gen,
-         dinero = din, objetivo = obj, apuesta = ap}) = show (show jj ++ "\n" ++ show vL ++ "\n" ++ nomb ++ "\n" ++
-                  show gen ++ "\n" ++ show din ++ "\n" ++ show obj ++ "\n" ++ show ap)   --}
+instance Show GameState where
+    show game = show ((show . juegosJugados $ game) ++ "\n" ++ (show . victoriasLambda $ game) ++ "\n" ++ (nombre $ game) ++ 
+                "\n" ++ (show . generador $ game) ++ "\n" ++ (show . dinero $ game) ++ "\n" ++ (show . objetivo $ game) ++ 
+                "\n" ++ (show . apuesta $ game))
         
 main = do 
     x <- menuInicial
+    print x
     menuPrincipal x
     
 {-- Verifica que las cantidades extraídas del archivo tengan sentido --}
@@ -95,14 +96,12 @@ menuInicial = do
 {-- Guarda la partida --}
 guardarPartida :: GameState -> IO ()
 guardarPartida game = do
-    --show game
-    return ()
-    {--putStrLn "Introduzca el nombre del archivo por favor"
+    putStrLn "Introduzca el nombre del archivo por favor"
     nombre <- getLine
     handle <- openFile nombre WriteMode
-    hPutStr $ (show game) handle
+    hPutStr handle (show game)
     hClose handle
-    putStrLn "El archivo ha sido guardado exitosamente"--}
+    putStrLn "El archivo ha sido guardado exitosamente"
 
 {-- Calcula la cantidad de partidasganadas por el usuario--}
 victoriasUsuario :: GameState -> String
@@ -122,7 +121,8 @@ seleccionarOpcion "2" game = do guardarPartida game
                                 menuPrincipal game
 seleccionarOpcion "3" game = do leerArchivo (menuPrincipal game)
                                 menuPrincipal game
-seleccionarOpcion "4" game = do return game
+seleccionarOpcion "4" game = do putStrLn $ "Gracias por jugar " ++ (nombre game)
+                                return game
 seleccionarOpcion  _  game = do putStrLn $ "Esa opción no es válida " ++ (nombre game)
                                 menuPrincipal game
 
