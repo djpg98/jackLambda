@@ -1,6 +1,7 @@
 import System.IO
 import System.Random
 import System.Directory
+import Control.DeepSeq
 
 --Note mental: Implementar Read para GameState
 
@@ -12,27 +13,37 @@ data GameState = GS {
                     dinero :: Int,
                     objetivo :: Int,
                     apuesta :: Int
-                    } deriving (Show) --Hay que quitar este deriving después
+                    } --deriving (Show) --Hay que quitar este deriving después
 
-{-- instance Read GameState where
-    read GS {juegosJugados = jj, victoriasLambda = vL, nombre = nomb, generador  = gen, dinero = din, 
-    objetivo = obj, apuesta = ap} = 
-        if verificarCantidades --}
+instance Read GameState where
+    readsPrec _ file = (\[jj, vL, nomb, gen, din, obj, ap] -> 
+        [((GS (read jj) (read vL) nomb (read gen) (read din) (read obj) (read ap)), " ")]) $ lines file
 
+{--instance Show GameState where
+    show (GS {juegosJugados = jj, victoriasLambda = vL, nombre = nomb, generador = gen,
+         dinero = din, objetivo = obj, apuesta = ap}) = show (show jj ++ "\n" ++ show vL ++ "\n" ++ nomb ++ "\n" ++
+                  show gen ++ "\n" ++ show din ++ "\n" ++ show obj ++ "\n" ++ show ap)   --}
+        
 main = do 
-    x <- iniciarPartida
+    x <- menuInicial
     menuPrincipal x
+    
+{-- Verifica que las cantidades extraídas del archivo tengan sentido --}
+estadoValido :: GameState -> Bool
+estadoValido game = if victoriasLambda game <= juegosJugados game && dinero game < objetivo game && apuesta game <= dinero game
+                    then True else False
 
-{-- Esta es la función que lee del archivo y guarda los datos en un gamestate. En el futuro estará implmentada con un
-    read para gamestate --}
-extraerContenidos :: FilePath -> IO GameState
-extraerContenidos archivo = do
-    withFile archivo ReadMode (\handle -> do
-        contents <- hGetContents handle
-        (\[jj, vL, nomb, gen, din, obj, ap] -> 
-            return $ GS (read jj) (read vL) nomb (read gen) (read din) (read obj) (read ap)) $ lines contents)
-            --No hice map read porque me iban a quedar elementos de distintos tipos en la lista y eso no se puede
-
+{-- Esta es la función que lee del archivo y guarda los datos en un gamestate. Si no se carga un estado válido se
+    devuelve al menú desde donde fue llamado. menuDeRetorno le indica el menú al que puede volver: menuInicial o 
+    menuPrincipal--}
+extraerContenidos :: FilePath -> IO GameState -> IO GameState
+extraerContenidos archivo menuDeRetorno = do
+    handle <- openFile archivo ReadMode
+    contents <- hGetContents handle
+    let x = read contents :: GameState
+    contents `deepseq` hClose handle --Lazy IO me estaba dando problemas, así que tuve que obligar a que leyera el archivo
+    if estadoValido x then return x else do putStrLn "Este archivo tiene algún error de contenido. No será cargado"
+                                            menuDeRetorno
 
 {-- Esta función verifica que exista el archivo que se desea cargar. Si existe, llama a extraerContenidos, si no se
     devuelve al menú desde donde se fue llamado (Recordar que se puede cargar desde dos puntos distintos del juego)
@@ -42,8 +53,8 @@ leerArchivo menuDeRetorno = do
     putStrLn "Ingrese el nombre del archivo: "
     nombre <- getLine
     existencia <- doesFileExist nombre
-    if existencia then extraerContenidos nombre else do putStrLn $ "El archivo " ++ nombre ++ " no existe" 
-                                                        menuDeRetorno
+    if existencia then extraerContenidos nombre menuDeRetorno else do putStrLn $ "El archivo " ++ nombre ++ " no existe" 
+                                                                      menuDeRetorno
 
 {-- Solicita los datos del jugador, llama a las funciones de verificación y crea un gameState nuevo --}
 solicitarDatos :: IO GameState
@@ -81,6 +92,18 @@ menuInicial = do
     respuesta <- getLine
     seleccionarAccion respuesta
 
+{-- Guarda la partida --}
+guardarPartida :: GameState -> IO ()
+guardarPartida game = do
+    --show game
+    return ()
+    {--putStrLn "Introduzca el nombre del archivo por favor"
+    nombre <- getLine
+    handle <- openFile nombre WriteMode
+    hPutStr $ (show game) handle
+    hClose handle
+    putStrLn "El archivo ha sido guardado exitosamente"--}
+
 {-- Calcula la cantidad de partidasganadas por el usuario--}
 victoriasUsuario :: GameState -> String
 victoriasUsuario game = show $ juegosJugados game - victoriasLambda game
@@ -95,6 +118,8 @@ mostarDatos game = do
 
 {-- Ejecuta la acción del menú principal seleccionada por el usuario --}
 seleccionarOpcion :: String -> GameState -> IO GameState
+seleccionarOpcion "2" game = do guardarPartida game
+                                menuPrincipal game
 seleccionarOpcion "3" game = do leerArchivo (menuPrincipal game)
                                 menuPrincipal game
 seleccionarOpcion "4" game = do return game
