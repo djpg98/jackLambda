@@ -2,7 +2,7 @@ import System.IO
 import System.Random
 import System.Directory
 import Control.DeepSeq
-
+import Cartas
 --Note mental: Implementar Read para GameState
 
 data GameState = GS {
@@ -117,6 +117,7 @@ mostarDatos game = do
 
 {-- Ejecuta la acción del menú principal seleccionada por el usuario --}
 seleccionarOpcion :: String -> GameState -> IO GameState
+seleccionarOpcion "1" game = do iniciarRonda game
 seleccionarOpcion "2" game = do guardarPartida game
                                 menuPrincipal game
 seleccionarOpcion "3" game = do leerArchivo (menuPrincipal game)
@@ -137,3 +138,45 @@ menuPrincipal game = do
     putStrLn $ "Ingrese el número de la opción a seleccionar por favor"
     opcion <- getLine
     seleccionarOpcion opcion game
+
+
+iniciarRonda :: GameState -> GameState
+iniciarRonda GS {juegosJugados = games, victoriasLambda = victsLambda, nombre = name, generador = gen, dinero = cash, objetivo = obj, apuesta = bet} = do
+    putStrLn $ name ++ ", esta es mi primera carta: " ++ head manoL
+    if blackjack manoL then do 
+        putStrLn name ++ ", he sacado blackjack. Yo gano."
+        return (GS (games+1 victsLambda+1 name gen cash-bet obj bet))
+        if cash-bet<bet then do
+            putStrLn name ++ ", no te queda dinero. Es el fin del juego para ti."
+            return (GS (games+1 victsLambda+1 name gen cash obj bet))
+        else do
+            return menuPrincipal (GS (games+1 victsLambda+1 name gen cash obj bet))
+    else do
+        putStrLn "Es tu turno "++ name ++", robaras de la izquierda o la derecha? [i/d]"
+        seleccion <- getLine
+        if blackjack manoJugador then do
+            putStrLn name ++ ", tu mano es blackjack"
+            return (GS (games+1 victsLambda name gen cash+bet obj bet))
+        else do
+            return continuarRonda mazoNuevo manoLambda manoJugador (GS (games victsLambda name gen cash obj bet))
+    where 
+        (manoLambda@(Mano manoL), mazo) = inicialLambda barajar gen baraja 
+        (mazoNuevo, manoJugador) = manoInicial mazo seleccion
+-- you need to do desdeMano somewhere but can't remember XD
+
+-- Finish this
+continuarRonda :: Mazo -> Mano -> Mano -> GameState -> GameState
+continuarRonda _ _ _ GS = GS
+
+manoInicial :: Mazo -> String -> (Mano, Mazo)
+manoInicial (Mazo (Mitad center left right)) "i" = checkDraw $ center $ "i" $ robar $ (Mazo (Mitad center left right)) (Mano []) Izquierdo 
+manoInicial (Mazo (Mitad center left right)) "d" = checkDraw $ center $ "d" $ robar $ (Mazo (Mitad center left right)) (Mano []) Derecho
+manoInicial mazo _ = do 
+                    putStrLn "Opcion invalida, intentelo de nuevo. Izquierda o derecha? [i/d]"
+                    x <- getLine
+                    manoInicial mazo x
+
+checkDraw :: Carta -> Maybe (Mazo, Mano) -> (Mazo, Mano)
+checkDraw card Just (mazo, (Mano (listaMano))) = (reconstruir $ mazo (Mano (card:listaMano)), (Mano (card:listaMano)))
+checkDraw card Nothing = F -- What to do here?
+         
