@@ -3,8 +3,15 @@ import System.Random
 import System.Directory
 import Control.DeepSeq
 import Cartas
---Note mental: Implementar Read para GameState
 
+{-- New functions
+-- lambdaWins: Updates gamestate if Lambda wins
+-- playerWins:    "         "     " player wins
+-- printLambdaVictory: If the player runs out of money, then it prints Lambda's victory message. 
+                       If there player can still bet then it calls menuPrincipal 
+-- printPlayerVictory: If the player reaches his goal, then it prints the player's victory message.
+                       If he isn't there yet, then it calls menuPrincipal
+--}
 data GameState = GS {
                     juegosJugados :: Int,
                     victoriasLambda :: Int,
@@ -28,6 +35,28 @@ main = do
     x <- menuInicial
     print x
     menuPrincipal x
+
+lambdaWins :: GameState -> GameState
+lambdaWins game = game {
+    juegosJugados = (juegosJugados game) + 1,
+    victoriasLambda = (victoriasLambda game) + 1,
+}
+
+playerWins :: GameState -> GameState
+playerWins game = game {
+    juegosJugados = (juegosJugados game) + 1,
+    dinero = (dinero game) + 2 * (apuesta game) 
+}
+
+playerSurrenders :: GameState -> GameState
+playerSurrenders game = game {
+    juegosJugados = (juegosJugados game) + 1,
+    victoriasLambda = (victoriasLambda game) + 1,
+    dinero = (dinero game) + (apuesta game) `div` 2
+}
+
+descontarApuesta :: GameState -> GameState
+descontarApuesta game = game {dinero = (dinero game) - (apuesta game)}
     
 {-- Verifica que las cantidades extraídas del archivo tengan sentido --}
 estadoValido :: GameState -> Bool
@@ -117,7 +146,7 @@ mostarDatos game = do
 
 {-- Ejecuta la acción del menú principal seleccionada por el usuario --}
 seleccionarOpcion :: String -> GameState -> IO GameState
-seleccionarOpcion "1" game = do iniciarRonda game
+seleccionarOpcion "1" game = do iniciarRonda (descontarApuesta game)
 seleccionarOpcion "2" game = do guardarPartida game
                                 menuPrincipal game
 seleccionarOpcion "3" game = do leerArchivo (menuPrincipal game)
@@ -140,37 +169,69 @@ menuPrincipal game = do
     seleccionarOpcion opcion game
 
 
-iniciarRonda :: GameState -> GameState
-iniciarRonda GS {juegosJugados = games, victoriasLambda = victsLambda, nombre = name, generador = gen, dinero = cash, objetivo = obj, apuesta = bet} = do
-    putStrLn $ name ++ ", esta es mi primera carta: " ++ head manoL
-    if blackjack manoL then do 
-        putStrLn name ++ ", he sacado blackjack. Yo gano."
-        return (GS (games+1 victsLambda+1 name gen cash-bet obj bet))
-        if cash-bet<bet then do
-            putStrLn name ++ ", no te queda dinero. Es el fin del juego para ti."
-            return (GS (games+1 victsLambda+1 name gen cash obj bet))
-        else do
-            return menuPrincipal (GS (games+1 victsLambda+1 name gen cash obj bet))
+iniciarRonda :: GameState -> IO GameState
+iniciarRonda match@(GS {juegosJugados = games, victoriasLambda = victsLambda, nombre = name, generador = gen, dinero = cash, objetivo = obj, apuesta = bet}) = do
+    putStrLn $ name ++ ", esta es mi primera carta: " ++ (show . head $ manoL)
+    if blackjack manoLambda then do 
+        putStrLn $ name ++ ", he sacado blackjack. Yo gano."
+        printLambdaVictory match
     else do
-        putStrLn "Es tu turno "++ name ++", robaras de la izquierda o la derecha? [i/d]"
+        putStrLn $ "Es tu turno "++ name ++", robaras de la izquierda o la derecha? [i/d]"
         seleccion <- getLine
+        let (mazoNuevo, manoJugador) = manoInicial (desdeMano mazo) seleccion
         if blackjack manoJugador then do
-            putStrLn name ++ ", tu mano es blackjack"
-            return (GS (games+1 victsLambda name gen cash+bet obj bet))
+            putStrLn $ name ++ ", tu mano es blackjack"
+            printPlayerVictory match
         else do
-            return continuarRonda mazoNuevo manoLambda manoJugador (GS (games victsLambda name gen cash obj bet))
+            continuarRonda mazoNuevo manoLambda manoJugador match
     where 
-        (manoLambda@(Mano manoL), mazo) = inicialLambda barajar gen baraja 
-        (mazoNuevo, manoJugador) = manoInicial mazo seleccion
--- you need to do desdeMano somewhere but can't remember XD
+        (manoLambda@(Mano manoL), mazo) = inicialLambda (barajar gen baraja)
 
--- Finish this
-continuarRonda :: Mazo -> Mano -> Mano -> GameState -> GameState
-continuarRonda _ _ _ GS = GS
+continuarRonda :: Mazo -> Mano -> Mano -> GameState -> IO GameState
+continuarRonda mazo manoLambda manoJugador gs = do
+    putStrLn $ "Selecciona tu próxima jugada " ++ (show . nombre $ gs)
+    putStrLn "1- Hit"
+    putStrLn "2- Stand"
+    putOptions manoJugador gs
+    opcion <- getLine
+    seleccionarJugada mazo manoLambda manoJugador gs
 
-manoInicial :: Mazo -> String -> (Mano, Mazo)
-manoInicial (Mazo (Mitad center left right)) "i" = checkDraw $ center $ "i" $ robar $ (Mazo (Mitad center left right)) (Mano []) Izquierdo 
-manoInicial (Mazo (Mitad center left right)) "d" = checkDraw $ center $ "d" $ robar $ (Mazo (Mitad center left right)) (Mano []) Derecho
+putSurrender :: String -> [Carta] -> IO ()
+putSurrender opcionNum lcartas = do if length (lcartas) == 2 then  putStrLn $ opcionNum ++ "- Surrender" else return ()
+
+putOptions :: Mano -> GameState -> IO ()
+putOptions (Mano j) game 
+    | (dinero game >= apuesta game) = do
+        putStrLn "3- Double down"
+        putSurrender "4" j
+    | otherwise =
+        putSurrender "3" j
+
+opcion3 :: Mazo -> Mano -> Mano -> GameState -> IO GameState
+opcion3 mazo manoLambda (Mano j) gs
+    | (dinero gs >= apuesta gs) = do doubleDown mazo manoLambda (mano j) gs
+    | (dinero gs < apuesta gs) && (length (lcartas) == 2) = do surrender doubleDown mazo manoLambda (mano j) gs
+    | otherwise = do putStrLn $ "Esa no es una jugada válida, " ++ (show . nombre $ gs)
+                     continuarRonda mazo manoLambda manoJugador mazo manoLambda (mano j) gs
+
+opcion4 :: Mazo -> Mano -> Mano -> GameState -> IO GameState
+opcion3 mazo manoLambda (Mano j) gs
+    | length (lcartas) == 2 = do surrender doubleDown mazo manoLambda (mano j) gs
+    | otherwise = do putStrLn $ "Esa no es una jugada válida, " ++ (show . nombre $ gs)
+                     continuarRonda mazo manoLambda manoJugador mazo manoLambda (mano j) gs
+
+seleccionarJugada :: String -> Mazo -> Mano -> Mano -> GameState -> IO GameState
+seleccionarJugada "1" mazo manoLambda manoJugador gs = do hit mazo manoLambda manoJugador gs
+seleccionarJugada "2" mazo manoLambda manoJugador gs = do stand mazo manoLambda manoJugador gs
+seleccionarJugada "3" mazo manoLambda manoJugador gs = do opcion3 mazo manoLambda manoJugador gs
+seleccionarJugada "4" mazo manoLambda manoJugador gs = do opcion4 mazo manoLambda manoJugador gs
+seleccionarJugada  x  mazo manoLambda manoJugador gs = do putStrLn $ "Esa no es una jugada válida, " ++ (show . nombre $ gs)
+                                                          continuarRonda mazo manoLambda manoJugador g
+
+
+manoInicial :: Mazo -> String -> (Mazo, Mano)
+manoInicial (Mitad center left right) "i" = checkDraw $ center $ "i" $ robar $ (Mitad center left right) (Mano []) Izquierdo 
+manoInicial (Mitad center left right) "d" = checkDraw $ center $ "d" $ robar $ (Mitad center left right) (Mano []) Derecho
 manoInicial mazo _ = do 
                     putStrLn "Opcion invalida, intentelo de nuevo. Izquierda o derecha? [i/d]"
                     x <- getLine
@@ -178,5 +239,69 @@ manoInicial mazo _ = do
 
 checkDraw :: Carta -> Maybe (Mazo, Mano) -> (Mazo, Mano)
 checkDraw card Just (mazo, (Mano (listaMano))) = (reconstruir $ mazo (Mano (card:listaMano)), (Mano (card:listaMano)))
-checkDraw card Nothing = F -- What to do here?
-         
+checkDraw card Nothing = (reconstruir $ mazo (Mano (card:listaMano)), (Mano (card:listaMano)))--F -- What to do here?
+
+-- Aquí están las 4 jugadas posibles
+
+surrender :: Mazo -> Mano -> Mano -> GameState -> IO GameState
+surrender mazo manoLambda manoJugador gs = do
+    putStrLn $ (nombre gs) + "te has renido. Yo gano"
+    printPlayerSurrenders gs
+
+stand :: Mazo -> Mano -> Mano -> GameState -> IO GameState
+stand mazo manoLambda manoJugador gs = do
+    let (Just mano) = juegaLamda (manoLambda)
+    putStrLn $ "Mi mano es " ++ (show mano)
+    if busted manoLambda then do
+        putStrLn "Tu ganas"
+        printPlayerVictory gs
+    else
+        determinarGanador manoLambda manoJugador gs
+
+determinarGanador :: Mano -> Mano -> IO GameState
+determinarGanador manoLambda manoJugador gs = do
+    if ganador manoLambda manoJugador == Dealer then do
+        putStrLn "Yo gano"
+        printLambdaVictory gs
+    else do
+        putStrLn "Tu ganas"
+        printPlayerVictory gs
+
+printPlayerVictory :: GameState -> IO GameState
+printPlayerVictory game = do
+    if (dinero game)+(2*(apuesta game)) >= (objetivo game) then do
+        putStrLn $ "Felicidades, " ++ (nombre game) ++ ", me has derrotado es el fin del juego para mí"
+        return (playerWins game)
+    else
+        menuPrincipal (playerWins game)
+
+printLambdaVictory :: GameState -> IO GameState
+printPlayerVictory game = do
+    if cash < bet then do
+        putStrLn $ name ++ ", no te queda dinero. Es el fin del juego para ti."
+        return (lambdaWins game)
+    else do
+        menuPrincipal (lambdaWins game)
+
+printPlayerSurrenders :: GameState -> IO GameState
+printPlayerSurrenders game = do
+    if (dinero game) + (apuesta game) `div` 2 < (apuesta game) then
+        putStrLn $ name ++ ", no te queda dinero. Es el fin del juego para ti."
+        return (playerSurrenders game)
+    else do
+        menuPrincipal (playerSurrenders game)
+
+-- To do
+hit :: Mazo -> Mano -> Mano -> GameState -> IO GameState
+hit mazo manoLambda manoJugador gs = return gs
+
+doubleDown :: Mazo -> Mano -> Mano -> GameState -> IO GameState
+doubleDown mazo manoLambda manoJugador gs = return gs
+
+
+
+ 
+
+
+
+

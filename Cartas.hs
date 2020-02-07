@@ -1,6 +1,22 @@
 -- Wilfredo Graterol
 -- Diego Peña
 
+module Cartas 
+( Carta
+, Mano (..)
+, Mazo (..)
+, Eleccion (..)
+, Jugador (..)
+, baraja
+, barajar
+, inicialLambda
+, blackjack
+, desdeMano
+, robar
+, juegaLambda
+, ganador
+)where
+
 import Prelude
 import Data.List
 import System.Random
@@ -69,12 +85,6 @@ Funciones de mano
 vacia :: Mano
 vacia = Mano []
 
-{-- 
-baraja :: Mano
-baraja = Mano $ concatMap (crearPalo) [Treboles, Diamantes, Picas, Corazones]
-    where crearPalo p = map (\rg -> Carta {rango = rg, palo = p}) $ map (N) [1..9] ++ [Jack, King, Queen, Ace]
---}
-
 -- Crea listas correspondientes a cada palo y luego las une en una sola para formar la baraja
 baraja :: Mano
 baraja =    
@@ -124,7 +134,7 @@ barajar gen (Mano c) = Mano (barajarAux gen c)
 barajarAux :: StdGen -> [Carta] -> [Carta]
 barajarAux _ [] = []
 barajarAux gen listaCartas =
-    let (index, newGen) = randomR(1, subtract 1 $ length listaCartas) gen :: (Int, StdGen)
+    let (index, newGen) = randomR(0, subtract 1 $ length listaCartas) gen :: (Int, StdGen)
         carta = listaCartas !! index
     in carta:(barajarAux newGen $ delete carta listaCartas)
 
