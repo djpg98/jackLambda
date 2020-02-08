@@ -8,10 +8,13 @@ module Cartas
 , Eleccion (..)
 , Jugador (..)
 , baraja
+, valor
 , barajar
+, busted
 , inicialLambda
 , blackjack
 , desdeMano
+, reconstruir
 , robar
 , juegaLambda
 , ganador
