@@ -81,6 +81,10 @@ instance Eq Jugador where
     (==) _       _      = False
     (/=) a      b       = not (a == b)
 
+-- instance Show Jugador where
+--     show Dealer = "Dealer"
+--     show Player = "Player"
+
 newtype Mano = Mano [Carta] --deriving(Show)
 
 instance Show Mano where
@@ -118,7 +122,7 @@ valor (Mano c) =
     in  if suma11 <= 21 then suma11 else suma1
 
 busted :: Mano -> Bool
-busted mano = if valor mano > 21 then True else False
+busted mano = if (valor mano) > 21 then True else False
 
 
 --En principio no le voy a poner que verifique que la mano tenga dos cartas, porque la idea sería solo llamarla
@@ -128,7 +132,7 @@ blackjack mano = if valor mano == 21 then True else False
 
 -- Verificar que no hay un bust antes
 ganador :: Mano -> Mano -> Jugador
-ganador manoDealer manoPlayer = if valor manoDealer >= valor manoPlayer then Dealer else Player
+ganador manoDealer manoPlayer = if (valor manoDealer) >= (valor manoPlayer) then Dealer else Player
 
 separar :: Mano -> (Mano, Carta, Mano)
 separar (Mano []) = error "No hay cartas en la mano"
@@ -155,10 +159,6 @@ inicialLambda (Mano c) = (Mano $ take 2 c, Mano $ drop 2 c)
 data Mazo = Vacio | Mitad Carta Mazo Mazo
 
 data Eleccion = Izquierdo | Derecho
-
--- instance Read Eleccion where 
-    -- readsPrec a =
-    -- readPrec a = 
 
 desdeMano :: Mano -> Mazo
 desdeMano (Mano []) = Vacio
@@ -192,10 +192,10 @@ robar Vacio _ _ = Nothing
 robar (Mitad _ Vacio Vacio) _ _ = Nothing
 robar (Mitad _ left Vacio) _ Derecho = Nothing
 robar (Mitad _ Vacio right) _ Izquierdo = Nothing
-robar (Mitad center (Mitad leftCenter leftLeft rightLeft) right) (Mano listaMano) Izquierdo = 
-    Just (reconstruir (Mitad center (Mitad leftCenter leftLeft rightLeft) right) (Mano (leftCenter:listaMano)), (Mano (leftCenter:listaMano)))
-robar (Mitad center left (Mitad rightCenter rightLeft rightRight)) (Mano listaMano) Derecho = 
-    Just (reconstruir (Mitad center left (Mitad rightCenter rightLeft rightRight)) (Mano (rightCenter:listaMano)), (Mano (rightCenter:listaMano)))
+robar mazo@(Mitad _ (Mitad leftCenter _ _) _) (Mano listaMano) Izquierdo = 
+    Just (reconstruir mazo (Mano (leftCenter:listaMano)), (Mano (leftCenter:listaMano)))
+robar mazo@(Mitad _ _ (Mitad rightCenter _ _)) (Mano listaMano) Derecho = 
+    Just (reconstruir mazo (Mano (rightCenter:listaMano)), (Mano (rightCenter:listaMano)))
 
 juegaLambda :: Mazo ->Mano ->Maybe Mano
 juegaLambda Vacio _ = Nothing

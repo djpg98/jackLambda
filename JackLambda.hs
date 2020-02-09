@@ -229,8 +229,8 @@ stand mazo manoLambda manoJugador gs = do
     if busted manoLambda then do
         putStrLn "Tu ganas"
         printPlayerVictory gs
-    else
-        determinarGanador manoLambda manoJugador gs
+    else do
+        determinarGanador mano manoJugador gs
 
 -- Duda: que hacer si el mazo se acaba? Nunca deberia pasar, y siempre deberia estar balanceado el mazo
 hit :: Bool -> Mazo -> Mano -> Mano -> GameState -> IO GameState
@@ -277,7 +277,7 @@ continueDouble :: Mazo -> Mano -> Mano -> GameState -> IO GameState
 continueDouble mazo manoLambda manoJugador gs@(GS {juegosJugados = games, victoriasLambda = victsLambda, nombre = name, generador = gen, dinero = cash, objetivo = obj, apuesta = bet}) = do
     let mano = getMano (juegaLambda mazo manoLambda)
     putStrLn $ "Mi mano es " ++ (show mano)
-    if busted manoLambda || (ganador manoLambda manoJugador == Player) then do
+    if (busted manoLambda) || (ganador mano manoJugador == Player) then do
         putStrLn "Tu ganas"
         printPlayerVictory (GS {juegosJugados = games, victoriasLambda = victsLambda, nombre = name, generador = gen, dinero = cash+bet, objetivo = obj, apuesta = bet})
     else do
@@ -291,8 +291,8 @@ getMano (Just mano) = mano
 -- Funciones utilizadas para determinar y anunciar el ganador
 
 determinarGanador :: Mano -> Mano -> GameState -> IO GameState
-determinarGanador manoLambda manoJugador gs = do
-    if ganador manoLambda manoJugador == Dealer then do
+determinarGanador manoLambda manoJugador gs =
+    if (ganador manoLambda manoJugador) == Dealer then do
         putStrLn "Yo gano"
         printLambdaVictory gs
     else do
