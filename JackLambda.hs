@@ -302,35 +302,35 @@ hit double mazo manoLambda manoJugador gs@(GS {juegosJugados = games, victoriasL
     x <- getLine
     if x /= "i" && x /= "d" then do
         putStrLn $ "Eleccion invalida, intentalo de nuevo."
-        return hit mazo manoLambda manoJugador gs
-    else return continueHit mazo manoLambda manoJugador x gs
+        hit mazo manoLambda manoJugador gs
+    else continueHit mazo manoLambda manoJugador x gs
 
 continueHit :: Bool -> Mazo -> Mano -> Mano -> GameState -> String -> IO GameState
 continueHit double mazo@(Mitad _ (Mitad leftCenter leftLeft leftRight) _) manoLambda (Mano manoJugador) gs@(GS {juegosJugados = games, victoriasLambda = victsLambda, nombre = name, generador = gen, dinero = cash, objetivo = obj, apuesta = bet}) "i" = do
     if busted (Mano (leftCenter:manoJugador)) 
         then do
         putStrLn $ name ++ ", tu mano es" ++ show (Mano (leftCenter:manoJugador))
-        putStrLn $ "Suma " ++ (show valor (Mano (leftCenter:manoJugador))) ++ ". Perdiste."
+        putStrLn $ "Suma " ++ (show $ valor (Mano (leftCenter:manoJugador))) ++ ". Perdiste."
         printLambdaVictory gs  
     else do
         putStrLn $ name ++ ", tu mano es" ++ show (Mano (leftCenter:manoJugador))
-        putStrLn $ "Suma " ++ (show valor (Mano (leftCenter:manoJugador))) ++ "."
+        putStrLn $ "Suma " ++ (show $ valor (Mano (leftCenter:manoJugador))) ++ "."
         if double 
-            then return continueDouble (reconstruir mazo (Mano (leftCenter:manoJugador))) manoLambda (Mano (leftCenter:manoJugador)) gs 
-        else return continuarRonda (reconstruir mazo (Mano (leftCenter:manoJugador))) manoLambda (Mano (leftCenter:manoJugador)) gs 
+            then continueDouble (reconstruir mazo (Mano (leftCenter:manoJugador))) manoLambda (Mano (leftCenter:manoJugador)) gs 
+        else continuarRonda (reconstruir mazo (Mano (leftCenter:manoJugador))) manoLambda (Mano (leftCenter:manoJugador)) gs 
 
 continueHit double mazo@(Mitad _ _ (Mitad rightCenter rightLeft rightRight)) manoLambda (Mano manoJugador) gs@(GS {juegosJugados = games, victoriasLambda = victsLambda, nombre = name, generador = gen, dinero = cash, objetivo = obj, apuesta = bet}) "d" = do
     if busted (Mano (rightCenter:manoJugador)) 
         then do
         putStrLn $ name ++ ", tu mano es" ++ show (Mano (rightCenter:manoJugador))
-        putStrLn $ "Suma " ++ (show valor (Mano (rightCenter:manoJugador))) ++ ". Perdiste."
+        putStrLn $ "Suma " ++ (show $ valor (Mano (rightCenter:manoJugador))) ++ ". Perdiste."
         printLambdaVictory gs  
     else do
         putStrLn $ name ++ ", tu mano es" ++ show (Mano (rightCenter:manoJugador))
-        putStrLn $ "Suma " ++ (show valor (Mano (rightCenter:manoJugador))) ++ "."
+        putStrLn $ "Suma " ++ (show $ valor (Mano (rightCenter:manoJugador))) ++ "."
         if double 
-            then return continueDouble (reconstruir mazo (Mano (rightCenter:manoJugador))) manoLambda (Mano (rightCenter:manoJugador)) gs 
-        else return continuarRonda (reconstruir mazo (Mano (rightCenter:manoJugador))) manoLambda (Mano (rightCenter:manoJugador)) gs 
+            then continueDouble (reconstruir mazo (Mano (rightCenter:manoJugador))) manoLambda (Mano (rightCenter:manoJugador)) gs 
+        else continuarRonda (reconstruir mazo (Mano (rightCenter:manoJugador))) manoLambda (Mano (rightCenter:manoJugador)) gs 
 
 
 doubleDown :: Mazo -> Mano -> Mano -> GameState -> IO GameState
