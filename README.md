@@ -1,6 +1,6 @@
 # CI-3661 Proyecto I: Jack 'El Monadico' Lambda
 Miembros: 
-Diego Peña 15-
+Diego Peña 15-11095
 Wilfredo Graterol 15-10639
 
 ## Como correr el programa
