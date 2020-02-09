@@ -75,6 +75,12 @@ instance Show Carta where
 
 data Jugador = Dealer | Player deriving(Show, Read)
 
+instance Eq Jugador where
+    (==) Dealer Dealer = True
+    (==) Player Player = True
+    (==) _       _      = False
+    (/=) a      b       = not (a == b)
+
 newtype Mano = Mano [Carta] --deriving(Show)
 
 instance Show Mano where
@@ -197,16 +203,3 @@ juegaLambda mazo mano = let
     Mano (x:xs) = aplanar mazo
     Mano listaMano = mano
     in if valor mano > 16 then Just mano else juegaLambda (desdeMano (Mano xs)) (Mano (x:listaMano))
-
--- Esto es para probar las funciones sobre manos que no sean la baraja completa o vacía
-manoPrueba = Mano [
-                    Carta Jack Treboles,
-                    Carta (N 2) Diamantes
-                  ]
-
-manoPrueba2 = Mano [
-                    Carta Jack Treboles,
-                    Carta (N 2) Diamantes,
-                    Carta Ace Picas,
-                    Carta (N 10) Diamantes
-                  ]
