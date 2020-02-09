@@ -18,5 +18,5 @@ Cartas.o: Cartas.hs
 	$(COMPILAR) Cartas.hs -o Cartas.o
 
 $(LAMBDA): JackLambda.hs Cartas.o
-	$(COMPILAR) JackLambda.hs -o JackLambda.o
+	$(COMPILAR) -main-is $(LAMBDA) JackLambda.hs -o JackLambda.o
 	$(LINKEAR) $(OBJETOS) -o $(LAMBDA)
