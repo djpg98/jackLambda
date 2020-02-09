@@ -12,3 +12,5 @@ En el proyecto se desarrollaron todas las funciones que sin modificar sus firmas
 Para algunas funciones que reciben argumentos del tipo `Maybe`, al no especificarse que accion tomar al recibir un argumento con el valor `Nothing` se decidio una accion que permitiera continuar el juego.
 
 En el caso de recibir las elecciones de los usuarios al elegir de que mazo sacar una carta, se decidio utilizar una representacion en Strings en vez de hacer una instancia read para ello por simplicidad de implementacion.
+
+Los ultimos detalles importantes de imlementacion son que al final de cada ronda se crea un nuevo generador para usar en la próxima partida y que los contenidos del archivo se leen de manera estricta (deben tener el formato correcto), porque de lo contrario el read no puede evaluar antes de que se cierre el handle del archivo.

@@ -1,5 +1,7 @@
--- Wilfredo Graterol
--- Diego Peña
+-- CI-3661 Proyecto I: Jack 'El Monadico' Lambda
+-- Modulo de cartas
+-- Wilfredo Graterol 15-10639
+-- Diego Peña 15-11095
 
 module Cartas 
 ( Carta

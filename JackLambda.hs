@@ -1,5 +1,7 @@
--- Wilfredo Graterol
--- Diego Peña
+-- CI-3661 Proyecto I: Jack 'El Monadico' Lambda
+-- Modulo principal
+-- Wilfredo Graterol 15-10639
+-- Diego Peña 15-11095
 
 module JackLambda (main) where
 
@@ -145,7 +147,7 @@ menuPrincipal game = do
 
 {-- Lambda roba sus cartas y luego es el turno del usuario. Acaba la ronda si hay blackjack en alguna de las manos--}
 iniciarRonda :: GameState -> IO GameState
-iniciarRonda match@(GS {juegosJugados = games, victoriasLambda = victsLambda, nombre = name, generador = gen, dinero = cash, objetivo = obj, apuesta = bet}) = do
+iniciarRonda match@(GS {nombre = name, generador = gen}) = do
     putStrLn $ name ++ ", esta es mi primera carta: " ++ (show . head $ manoL)
     if blackjack manoLambda then do 
         putStrLn $ name ++ ", he sacado blackjack. Yo gano."
@@ -220,17 +222,18 @@ seleccionarJugada  x  mazo manoLambda manoJugador gs = do putStrLn $ "Esa no es 
 
 {-- Saca la mano inicial del jugador del mazo y devuelve dicha mano más el mazo actualizado--}
 manoInicial :: Mano -> Mazo -> String -> IO (Mazo, Mano)
-manoInicial manoLambda (Mitad center left right) "i" = return $ checkDraw manoLambda center (robar (Mitad center left right) (Mano []) Izquierdo) 
-manoInicial manoLambda (Mitad center left right) "d" = return $ checkDraw manoLambda center (robar (Mitad center left right) (Mano []) Derecho)
+manoInicial manoLambda mazo@(Mitad center left right) "i" = return $ checkDraw manoLambda center (robar mazo (Mano []) Izquierdo) Izquierdo 
+manoInicial manoLambda mazo@(Mitad center left right) "d" = return $ checkDraw manoLambda center (robar mazo (Mano []) Derecho) Derecho
 manoInicial manoLambda mazo _ = do 
                     putStrLn $ "Opción inválida, inténtelo de nuevo. Izquierda o derecha? [i/d]"
                     x <- getLine
                     manoInicial manoLambda mazo x
 
-{-- --}
-checkDraw :: Mano -> Carta -> Maybe (Mazo, Mano) -> (Mazo, Mano)
-checkDraw _ card (Just (mazo, (Mano (listaMano)))) = (reconstruir mazo (Mano (card:listaMano)), (Mano (card:listaMano)))
-checkDraw manoLambda@(Mano listaMano) card Nothing = checkDraw manoLambda card (Just (reconstruir (desdeMano baraja) (Mano (card:listaMano)), (Mano [])))
+{--Retorna la primera mano del jugador, asi como el mazo resultabte de haber robado las dos cartas de el. Si el mazo es vacio lo reconstruye.--}
+checkDraw :: Mano -> Carta -> Maybe (Mazo, Mano) -> Eleccion -> (Mazo, Mano)
+checkDraw _ card (Just (mazo, (Mano (listaMano)))) _ = (reconstruir mazo (Mano (card:listaMano)), (Mano (card:listaMano)))
+checkDraw manoLambda@(Mano listaMano) card Nothing eleccion = checkDraw manoLambda card (robar newMazo (Mano []) eleccion) eleccion
+                                                              where newMazo = (reconstruir (desdeMano baraja) (Mano (card:listaMano)))
 
 -- Aquí están las 4 jugadas posibles
 
